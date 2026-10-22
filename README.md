@@ -1,3 +1,8 @@
+## 🎥 Issue Selection & Code Submission Tutorial
+
+This video shows you how to tell us which issue you want to work on and how to submit your code.
+
+[Watch the Tutorial] https://mailaub-my.sharepoint.com/:v:/g/personal/lmm46_mail_aub_edu/IQAPqEYQrN03SrCzrh4cOoMxARMXaHU4ki2RmEPUwwLex0k?e=lXrjRw
 # AUB Collab
 ### Have an idea. Find your people. Build it together.
 
