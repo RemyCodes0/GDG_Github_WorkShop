@@ -1,4 +1,4 @@
-# AUB Collab [Leen edits]
+# AUB Collab
 ### Have an idea. Find your people. Build it together.
 
 **AUB Collab** is an AUB-specific student collaboration platform designed to help students turn their ideas into real projects by connecting them with other students who have the skills, interests, and motivation to contribute.
