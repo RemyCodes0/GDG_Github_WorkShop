@@ -69,11 +69,12 @@ The file is damaged or was changed. Do not force it. Use the previous backup, an
 
 ## Practise it
 
-A backup that has never been restored is a hope, not a plan. Once a month, restore the newest backup into a scratch database and run the app against it:
+A backup that has never been restored is a hope, not a plan. Once a month, on a test machine or a fresh local checkout (never on production):
 
 ```bash
-DB_NAME=/tmp/restore-test.sqlite3 python manage.py migrate
-DB_NAME=/tmp/restore-test.sqlite3 python manage.py restore <newest backup> --yes
+python manage.py migrate
+python manage.py restore <newest backup> --yes
+python manage.py runserver
 ```
 
-Note how long it took; that is the real RTO.
+Log in, click around, and note how long it took. That is the real RTO.
