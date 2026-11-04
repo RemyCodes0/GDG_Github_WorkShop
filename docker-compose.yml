@@ -1,0 +1,56 @@
+# Runs the whole AUB Collab stack the way production does:
+#   docker compose up --build      then open http://localhost:8080
+#
+#   web      nginx serving the React build, proxying /api and /admin to backend
+#   backend  Django + Gunicorn, private (only reachable through web)
+#   db       PostgreSQL with a persistent volume
+#
+# Copy .env.production.example to .env.production and change the secrets before
+# using this anywhere except your own machine.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-aubcollab}
+      POSTGRES_USER: ${DB_USER:-aubcollab}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-local-dev-only-password}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ./Backend
+    env_file:
+      - path: .env.production
+        required: false
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-local-dev-only-change-me}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:8080}
+      DB_ENGINE: postgres
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-aubcollab}
+      DB_USER: ${DB_USER:-aubcollab}
+      DB_PASSWORD: ${DB_PASSWORD:-local-dev-only-password}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build: ./Frontend
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
