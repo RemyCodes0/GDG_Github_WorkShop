@@ -4,6 +4,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from caching.config import build_caches
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
@@ -21,6 +23,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "caching",
 ]
 
 MIDDLEWARE = [
@@ -75,6 +78,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Caching: CACHE_URL picks the backend (locmem:// by default, redis://... in production).
+# See caching/config.py and caching/utils.py.
+CACHES = build_caches(
+    os.environ.get("CACHE_URL"),
+    default_timeout=int(os.environ.get("CACHE_DEFAULT_TIMEOUT", "300")),
+    key_prefix=os.environ.get("CACHE_KEY_PREFIX", "aubcollab"),
+)
 
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
