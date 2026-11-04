@@ -55,6 +55,48 @@ The admin site is at http://localhost:8000/admin/. Create an account with `pytho
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated allowed hosts |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated frontend origins |
 
+## Background Jobs
+
+Slow work (sending emails, generating recommendations, processing a CV upload) should not make a student wait for the page. The `jobs` app runs it in the background, using the database as the queue, so there is nothing extra to install.
+
+**1. Define a task** in any app's `tasks.py` (found automatically):
+
+```python
+from jobs.tasks import task
+
+@task(max_attempts=5)
+def send_acceptance_email(application_id):
+    ...
+```
+
+**2. Queue it** from a view or anywhere else. Pass IDs, not objects; arguments are stored as JSON:
+
+```python
+send_acceptance_email.enqueue(application.pk)
+send_acceptance_email.enqueue(application.pk, delay=timedelta(minutes=10))
+```
+
+The job is saved in the same database transaction as the data it is about. If that transaction rolls back, the job disappears with it, so a worker never acts on data that was never saved.
+
+**3. Run a worker** next to the web server:
+
+```bash
+python manage.py runjobs                  # runs until stopped, checks every 2 seconds
+python manage.py runjobs --queue emails   # only one queue (repeat the flag for several)
+python manage.py runjobs --burst          # run what is due, then exit (for cron)
+```
+
+| Behavior | Detail |
+| --- | --- |
+| Several workers | Safe. On PostgreSQL each job is claimed with `SELECT ... FOR UPDATE SKIP LOCKED`; on SQLite with a conditional update. A job never runs twice at the same time |
+| Retries | A failing job is retried with backoff (30 s, 2 min, 8 min, ... up to 1 hour), up to `max_attempts`, then marked failed with its traceback saved |
+| Priorities and queues | `@task(priority=10)` runs before lower priorities; `@task(queue="emails")` lets you give slow work its own workers |
+| Crashed workers | Jobs left running for 30 minutes are put back in the queue automatically |
+| Shutdown | Ctrl+C or SIGTERM lets the current job finish first |
+| Admin | **Background jobs** in the admin lists every job with its status and error, with a "Retry selected jobs now" action |
+
+In tests, call a task directly (`send_acceptance_email(5)`) to run it immediately without a worker.
+
 ## Structure
 
 ```
