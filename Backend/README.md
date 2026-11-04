@@ -46,6 +46,34 @@ The admin site is at http://localhost:8000/admin/. Create an account with `pytho
 | `python manage.py startapp <name>` | Create a new Django app |
 | `python manage.py test` | Run the tests |
 
+## API Versioning
+
+Every endpoint lives under a version prefix so the API can change without breaking existing clients.
+
+| URL | Returns |
+| --- | --- |
+| `GET /api/` | The available versions, the latest one, and which are deprecated |
+| `GET /api/v1/health/` | `{"status": "ok", "version": "v1"}` |
+| `GET /api/v2/...` (or any unknown version) | `404` with a JSON message pointing to `/api/` |
+
+Every versioned response includes an `API-Version` header. The old `GET /api/health/` still works for existing scripts.
+
+**Adding an endpoint:** subclass `api.base.VersionedAPIView` (or set `versioning_class` on a viewset) and add the route to `api/v1/urls.py`. Inside a view, `request.version` tells you which version was called, so one view can serve small differences between versions.
+
+**Adding a new version:**
+
+1. Create `api/v2/urls.py`, starting from a copy of `api/v1/urls.py`
+2. Add `"v2"` to `REST_FRAMEWORK["ALLOWED_VERSIONS"]` in `config/settings.py`
+3. Add it to `VERSION_URLCONFS` in `api/urls.py`
+
+**Retiring a version:** list it in `API_DEPRECATED_VERSIONS` with a sunset date:
+
+```python
+API_DEPRECATED_VERSIONS = {"v1": {"sunset": "2027-09-01"}}
+```
+
+Its responses then carry `Deprecation: true`, `Sunset: Wed, 01 Sep 2027 00:00:00 GMT` ([RFC 8594](https://www.rfc-editor.org/rfc/rfc8594)) and a `Link` to the newest version, and `/api/` marks it as deprecated. Remove it from `ALLOWED_VERSIONS` after the sunset date.
+
 ## Environment Variables
 
 | Variable | Default | Description |

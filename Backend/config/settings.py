@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "api",
 ]
 
 MIDDLEWARE = [
@@ -79,3 +80,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
 ).split(",")
+
+# API versioning: every endpoint lives under /api/<version>/. See api/urls.py.
+REST_FRAMEWORK = {
+    "DEFAULT_VERSIONING_CLASS": "api.versioning.AUBCollabVersioning",
+    "DEFAULT_VERSION": "v1",
+    "ALLOWED_VERSIONS": ["v1"],
+    "VERSION_PARAM": "version",
+}
+
+# Versions that still work but will be removed. Their responses get Deprecation and
+# Sunset headers. Example: {"v1": {"sunset": "2027-09-01"}}
+API_DEPRECATED_VERSIONS = {}
