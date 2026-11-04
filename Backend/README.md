@@ -54,6 +54,52 @@ The admin site is at http://localhost:8000/admin/. Create an account with `pytho
 | `DJANGO_DEBUG` | `True` | Debug mode |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated allowed hosts |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated frontend origins |
+| `THROTTLING_ENABLED` | `True` | Set to `False` to turn every rate limit off, for load tests |
+| `THROTTLE_<SCOPE>` | see below | Override one rate, for example `THROTTLE_AUTH=10/min` |
+| `NUM_PROXIES` | unset | Number of reverse proxies in front of the app, so limits see the real client IP |
+| `MAX_REQUEST_BODY_BYTES` | `2097152` (2 MB) | Larger request bodies are rejected |
+
+## Abuse Prevention
+
+The `abuse` app protects the API from spam, scraping and password guessing.
+
+**Global limits.** Every API request counts against two limits, a short burst and a daily total. Anonymous visitors are counted per IP address, signed in students per account:
+
+| Scope | Default |
+| --- | --- |
+| `anon_burst` / `anon_sustained` | 30 per minute / 1000 per day per IP |
+| `user_burst` / `user_sustained` | 120 per minute / 10000 per day per account |
+
+**Sensitive actions** get a tighter limit on top. Add `SensitiveActionThrottle` and a scope to the view:
+
+```python
+from rest_framework.settings import api_settings
+from abuse.throttles import SensitiveActionThrottle
+
+class LoginView(APIView):
+    throttle_classes = [*api_settings.DEFAULT_THROTTLE_CLASSES, SensitiveActionThrottle]
+    throttle_scope = "auth"
+```
+
+| Scope | Default | For |
+| --- | --- | --- |
+| `auth` | 5 per minute | login, registration, password reset, email verification |
+| `applications` | 20 per hour | applying to projects |
+| `project_create` | 10 per hour | publishing projects |
+
+All views with the same scope share one counter, so spreading attempts over several endpoints does not get around it.
+
+**When a limit is hit** the API answers `429 Too Many Requests` with a `Retry-After` header and:
+
+```json
+{"detail": "Too many requests. Please slow down and try again later.", "code": "rate_limited", "retry_after_seconds": 42}
+```
+
+Each rejection is logged as a warning on the `aubcollab.abuse` logger with the scope, path, client IP and user ID, so repeated abuse is easy to spot.
+
+**Request size.** Bodies over `MAX_REQUEST_BODY_BYTES` and forms with more than 500 fields are rejected before a view runs.
+
+Counters are stored in the default cache. With several server processes in production, point the cache at a shared store such as Redis, or each process will count separately.
 
 ## Structure
 
