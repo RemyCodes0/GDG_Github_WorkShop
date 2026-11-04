@@ -45,6 +45,38 @@ npm run dev
 
 See the README in each folder for more details.
 
+## CI/CD
+
+[![CI/CD](https://github.com/RemyCodes0/GDG_Github_WorkShop/actions/workflows/ci.yml/badge.svg)](https://github.com/RemyCodes0/GDG_Github_WorkShop/actions/workflows/ci.yml)
+
+Every pull request and every push to `main` runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml):
+
+| Job | What it checks |
+| --- | --- |
+| **Backend** | Installs `requirements.txt` on Python 3.11 and 3.13, runs `manage.py check`, fails if a model change has no migration, applies migrations, and runs `manage.py test` |
+| **Frontend** | Runs `npm ci`, `npm run lint`, and `npm run build` on Node 20, then uploads `dist/` as a downloadable artifact |
+| **CI passed** | One summary job that is green only when everything above passed. Mark it as required in branch protection |
+| **Deploy frontend** | After a merge to `main`, publishes the frontend to GitHub Pages (off by default, see below) |
+
+Pull requests only run the jobs for the folder they touch, so a frontend change does not wait on the backend and the other way around. A newer push to the same pull request cancels the older run.
+
+Run the same checks locally before opening a pull request:
+
+```bash
+# Backend
+cd Backend
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test
+
+# Frontend
+cd Frontend
+npm run lint
+npm run build
+```
+
+**Turning on deployment:** in the repository settings, set **Pages > Source** to **GitHub Actions**, then add a repository variable `ENABLE_PAGES_DEPLOY` with the value `true` under **Secrets and variables > Actions > Variables**.
+
 ## How It Works
 
 A student with an idea can create a project on AUB Collab and provide information such as:
