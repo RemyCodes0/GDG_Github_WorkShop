@@ -54,6 +54,38 @@ The admin site is at http://localhost:8000/admin/. Create an account with `pytho
 | `DJANGO_DEBUG` | `True` | Debug mode |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated allowed hosts |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated frontend origins |
+| `LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING` or `ERROR` |
+| `LOG_FORMAT` | `text` while debugging, `json` otherwise | `text` for reading in a terminal, `json` for log tools |
+| `SLOW_REQUEST_MS` | `1000` | Requests slower than this are logged as warnings |
+
+## Observability
+
+The `observability` app makes it possible to answer "what happened to this request?" in production.
+
+**Request IDs.** Every response has an `X-Request-ID` header. If the frontend or a proxy sends one, it is reused, otherwise a new one is made. The same ID is on every log line written while handling that request, so one search finds the whole story. Put it in bug reports.
+
+**Access log.** One line per request with method, path, status, duration and user ID. Server errors log as `ERROR`, client errors and slow requests (over `SLOW_REQUEST_MS`) as `WARNING`, and health probes as `DEBUG` so they do not drown real traffic. Responses also carry a `Server-Timing` header, which shows up in the browser's Network tab.
+
+**Structured logs.** With `LOG_FORMAT=json` each line is a JSON object that Grafana Loki, Datadog, CloudWatch or the ELK stack can index directly:
+
+```json
+{"timestamp": "2026-11-05T09:12:03.481+00:00", "level": "INFO", "logger": "aubcollab.request", "message": "GET /api/health/ready/ 200 2.1ms", "request_id": "7a95...", "http_method": "GET", "path": "/api/health/ready/", "status": 200, "duration_ms": 2.1, "slow": false, "user_id": null}
+```
+
+In your own code, log through a logger under `aubcollab` and the request ID is added for you:
+
+```python
+import logging
+logger = logging.getLogger("aubcollab.projects")
+logger.info("Project created", extra={"project_id": project.pk})
+```
+
+**Health probes** for hosting platforms and load balancers:
+
+| URL | Meaning |
+| --- | --- |
+| `GET /api/health/live/` | The process is up. Does not touch the database. Use for restart checks |
+| `GET /api/health/ready/` | Every database answered. Returns `503` otherwise. Use for traffic routing |
 
 ## Structure
 
