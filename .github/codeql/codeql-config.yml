@@ -1,0 +1,8 @@
+name: AUB Collab CodeQL config
+
+# Scan the application code only. Generated and third-party files add noise.
+paths-ignore:
+  - "**/node_modules/**"
+  - "**/dist/**"
+  - "**/migrations/**"
+  - "**/.venv/**"

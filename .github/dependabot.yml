@@ -1,0 +1,27 @@
+# Opens pull requests when a dependency has a security fix or a new version.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /Backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      backend-dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /Frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      frontend-dependencies:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
