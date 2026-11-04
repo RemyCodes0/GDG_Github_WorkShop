@@ -54,6 +54,48 @@ The admin site is at http://localhost:8000/admin/. Create an account with `pytho
 | `DJANGO_DEBUG` | `True` | Debug mode |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated allowed hosts |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated frontend origins |
+| `CACHE_URL` | `locmem://` | Cache backend: `locmem://`, `redis://host:6379/0`, `rediss://...` or `dummy://` |
+| `CACHE_DEFAULT_TIMEOUT` | `300` | Seconds a cached value lives unless a call says otherwise |
+| `CACHE_KEY_PREFIX` | `aubcollab` | Prefix on every key, so several apps can share one Redis |
+
+## Caching
+
+The `caching` app gives every feature one way to cache expensive work, such as project listings, search results or recommendation scores.
+
+**Choosing a backend.** `CACHE_URL` decides where cached data lives. Development and tests use in-process memory with no setup. Production should use Redis so every server process shares the same cache: set `CACHE_URL=redis://your-host:6379/0` and `pip install redis`. `CACHE_URL=dummy://` turns caching off, handy when you suspect stale data.
+
+Check the configured backend with:
+
+```bash
+python manage.py cachecheck
+# LocMemCache: OK (0.1 ms round trip)
+```
+
+**Caching a function:**
+
+```python
+from caching.utils import cached, invalidate
+
+@cached("projects", timeout=120)
+def project_list(category=None):
+    return list(Project.objects.filter(category=category).values())
+
+# after a project is created, edited or deleted:
+invalidate("projects")
+```
+
+Each argument combination is cached separately. For data that belongs to one object, give a namespace per object so you only clear that one:
+
+```python
+@cached(lambda user_id: f"profile:{user_id}")
+def profile_summary(user_id): ...
+
+profile_summary.invalidate(42)  # clears user 42 only
+```
+
+**How invalidation works.** Every namespace has a version number that is part of its keys. `invalidate()` bumps the version, so all old keys stop being used at once and expire on their own. This works the same on memory and Redis, with no need to search for and delete keys.
+
+**Failure safe.** If the cache server is down, reads and writes are logged as warnings and the value is computed normally, so a cache outage slows the site down but never breaks it.
 
 ## Structure
 
