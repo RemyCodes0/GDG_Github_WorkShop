@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "backups",
 ]
 
 MIDDLEWARE = [
@@ -79,3 +80,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
 ).split(",")
+
+# Disaster recovery: where `manage.py backup` writes, and how many backups it keeps
+# (newest per day, week and month). Point BACKUP_DIR at a mounted volume or synced folder
+# that is NOT on the same disk as the database. See backups/core.py.
+BACKUP_DIR = os.environ.get("BACKUP_DIR", str(BASE_DIR / "backups_data"))
+BACKUP_RETENTION = {
+    "daily": int(os.environ.get("BACKUP_KEEP_DAILY", "7")),
+    "weekly": int(os.environ.get("BACKUP_KEEP_WEEKLY", "4")),
+    "monthly": int(os.environ.get("BACKUP_KEEP_MONTHLY", "6")),
+}
