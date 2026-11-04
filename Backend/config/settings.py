@@ -21,9 +21,12 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "observability",
 ]
 
 MIDDLEWARE = [
+    # First, so the request ID and timing cover everything below it.
+    "observability.middleware.RequestContextMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -79,3 +82,37 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
 ).split(",")
+# Let the frontend read the request ID, so a bug report can include it.
+CORS_EXPOSE_HEADERS = ["X-Request-ID", "Server-Timing"]
+
+# Observability: structured logs with a request ID on every line. See observability/.
+# LOG_FORMAT is "text" (readable, default while DEBUG) or "json" (one object per line).
+LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
+LOG_FORMAT = os.environ.get("LOG_FORMAT", "text" if DEBUG else "json").lower()
+OBSERVABILITY_SLOW_REQUEST_MS = int(os.environ.get("SLOW_REQUEST_MS", "1000"))
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "request_id": {"()": "observability.logging.RequestIdFilter"},
+    },
+    "formatters": {
+        "text": {"format": "%(asctime)s %(levelname)s [%(request_id)s] %(name)s: %(message)s"},
+        "json": {"()": "observability.logging.JsonFormatter"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "filters": ["request_id"],
+            "formatter": "json" if LOG_FORMAT == "json" else "text",
+        },
+    },
+    "root": {"handlers": ["console"], "level": LOG_LEVEL},
+    "loggers": {
+        # Our access log replaces Django's own request logging.
+        "django.server": {"level": "WARNING"},
+        "django.request": {"level": "ERROR"},
+        "aubcollab": {"level": LOG_LEVEL},
+    },
+}
