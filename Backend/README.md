@@ -54,6 +54,31 @@ The admin site is at http://localhost:8000/admin/. Create an account with `pytho
 | `DJANGO_DEBUG` | `True` | Debug mode |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated allowed hosts |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | Comma-separated frontend origins |
+| `PRIVATE_MEDIA_ROOT` | `Backend/private_media` | Where uploads are stored. Must not be inside a public web folder |
+| `FILE_UPLOAD_MAX_BYTES` | `5242880` (5 MB) | Largest accepted upload |
+| `FILE_LINK_MAX_AGE` | `300` | Seconds a download link works |
+
+## Secure File Storage
+
+The `files` app stores CVs and other uploads so that only the right people can ever read them.
+
+| Endpoint | Does |
+| --- | --- |
+| `POST /api/files/` (signed in, multipart field `file`) | Validates and stores the upload. Returns its id, name, type, size, SHA 256 and a download link |
+| `GET /api/files/<id>/` | Details and a fresh download link, for the owner or staff |
+| `DELETE /api/files/<id>/` | Owner only. Removes the record and the file on disk |
+| `GET /api/files/download/<token>/` | Serves the file, if the link is valid, not expired, and opened by the user it was issued to |
+
+**What makes it safe:**
+
+* **Content is checked, not just the name.** Allowed types are PDF, DOCX, PNG and JPEG. The file's first bytes must match its extension (a DOCX must really contain a Word document), so a renamed script or HTML page is rejected even if it is called `cv.pdf`.
+* **Nothing is public.** Files are stored outside any public folder, under a random name (never the uploader's file name), with `0640` permissions.
+* **Signed, expiring links.** A download link is signed with `SECRET_KEY`, names the user it was issued to, and stops working after 5 minutes. A changed character gives 404, an old link gives 410. A forwarded link does not work for anyone else.
+* **No probing.** "Does not exist" and "not yours" both answer 404, so file IDs cannot be tested.
+* **Safe delivery.** Downloads are always attachments with `nosniff`, `no-store` and a sandboxing Content-Security-Policy, so a browser never runs a file inside the site.
+* **Integrity.** Each file's SHA 256 is stored, to detect tampering or duplicate uploads later.
+
+Who may open a file is decided in one place, `files.views.can_access` (today: the owner and staff). When applications exist, extend it so a project owner can open the CVs of students who applied to their project.
 
 ## Structure
 

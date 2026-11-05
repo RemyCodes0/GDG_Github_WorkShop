@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
+    "files",
 ]
 
 MIDDLEWARE = [
@@ -79,3 +80,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
 ).split(",")
+
+# Secure file storage (CVs and other uploads). Files are kept outside any public folder and
+# only served through signed links that expire. Keep PRIVATE_MEDIA_ROOT out of the web root.
+PRIVATE_MEDIA_ROOT = os.environ.get("PRIVATE_MEDIA_ROOT", str(BASE_DIR / "private_media"))
+FILE_UPLOAD_MAX_BYTES = int(os.environ.get("FILE_UPLOAD_MAX_BYTES", str(5 * 1024 * 1024)))
+FILE_UPLOAD_ALLOWED_TYPES = ["pdf", "docx", "png", "jpg", "jpeg"]
+FILE_LINK_MAX_AGE = int(os.environ.get("FILE_LINK_MAX_AGE", "300"))  # seconds
+FILE_UPLOAD_PERMISSIONS = 0o640
+# Uploads up to the limit above must get past Django's own request size check.
+DATA_UPLOAD_MAX_MEMORY_SIZE = FILE_UPLOAD_MAX_BYTES + 1024 * 1024

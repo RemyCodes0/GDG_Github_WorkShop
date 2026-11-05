@@ -1,7 +1,7 @@
 """URL configuration for AUB Collab."""
 from django.contrib import admin
 from django.http import JsonResponse
-from django.urls import path
+from django.urls import include, path
 
 
 def health(_request):
@@ -11,4 +11,5 @@ def health(_request):
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/health/", health),
+    path("api/files/", include("files.urls")),
 ]
