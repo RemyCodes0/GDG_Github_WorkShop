@@ -1,0 +1,26 @@
+.project-card-preview {
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
+.project-card-preview header {
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.project-card-preview h1 {
+  max-width: 20ch;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.15;
+}
+
+.project-card-preview__eyebrow {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.project-card-preview__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 1.25rem;
+}

@@ -30,7 +30,37 @@ The app runs at http://localhost:5173. The backend is expected at http://localho
 | `npm run dev` | Start the dev server with hot reload |
 | `npm run build` | Create a production build in `dist/` |
 | `npm run preview` | Preview the production build locally |
+| `npm test` | Test Project Card rendering and fallback behavior |
 | `npm run lint` | Lint the codebase |
+
+## Project Card
+
+Open `/project-card.html` on the development or preview server to see three
+sample cards. This separate component preview leaves the existing homepage intact.
+The preview grid adapts to narrow screens; the card also inherits the app's light
+and dark theme variables. Long text and skill labels wrap without truncation.
+
+```jsx
+import ProjectCard from './components/ProjectCard'
+
+<ProjectCard
+  title="AI-Powered Campus Navigation"
+  description="Build an accessible campus navigation tool."
+  category="Technology"
+  skills={['React', 'Python', 'UI/UX design']}
+  duration="3 months"
+  status="Recruiting"
+/>
+```
+
+All fields are strings except `skills`, which is an array of strings. Missing or
+blank fields have readable fallbacks. Blank/duplicate skills are omitted.
+The existing `CategoryBadge` supplies category colors. Status is always expressed
+as text, including unknown statuses. An optional `href` turns the title into a
+keyboard-accessible details link; omit it until the destination exists.
+
+Each card is an `article` labelled by its `h2`. Place cards below the page's `h1`.
+Run `npm test`, `npm run lint`, and `npm run build` before submitting changes.
 
 ## What This App Will Do
 
