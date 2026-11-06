@@ -24,9 +24,9 @@ Every pull request, every push to `main`, and a weekly Monday run go through
 | npm packages | `npm audit` | a runtime dependency has a high or critical vulnerability (dev tooling only warns) |
 | Committed secrets | Gitleaks over the full history | a password, token, or key is found in a commit |
 | Django settings | `manage.py check --deploy` | warns about missing production hardening (HTTPS, secure cookies, HSTS) |
-| New dependencies | Dependency Review | a pull request adds a package with a high or critical vulnerability |
+| New dependencies | Dependency Review | a pull request adds a package with a high or critical vulnerability (needs the dependency graph turned on in Settings > Code security; until then it is skipped with a warning) |
 
-[Dependabot](.github/dependabot.yml) opens weekly pull requests for pip and npm updates and monthly ones for GitHub Actions.
+[Dependabot](.github/dependabot.yml) opens weekly grouped pull requests for pip and npm updates and one monthly pull request for all GitHub Actions updates. Django major versions are skipped because the project supports Python 3.11; patches for the current Django LTS still arrive.
 
 CodeQL results appear under the repository's **Security > Code scanning** tab.
 
