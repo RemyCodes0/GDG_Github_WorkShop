@@ -10,6 +10,11 @@ updates:
     groups:
       backend-dependencies:
         patterns: ["*"]
+    ignore:
+      # Django 6 needs Python 3.12+, but the project supports Python 3.11 (see README).
+      # Major upgrades are planned by hand; security patches for Django 5.2 LTS still arrive.
+      - dependency-name: "django"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /Frontend
@@ -20,8 +25,14 @@ updates:
     groups:
       frontend-dependencies:
         patterns: ["*"]
+        # Majors usually need code changes, so they arrive as separate pull requests.
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    # One pull request for all workflow updates instead of one per action.
+    groups:
+      github-actions:
+        patterns: ["*"]

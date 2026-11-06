@@ -140,6 +140,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Needs the repository's dependency graph (Settings > Code security > Dependency graph).
+      # Until a maintainer turns it on, report a warning instead of failing every pull request.
+      - name: Check that the dependency graph is enabled
+        id: graph
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${{ github.repository }}/dependency-graph/sbom" --silent 2>/dev/null; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Dependency review skipped: enable the dependency graph in Settings > Code security"
+          fi
+
       - uses: actions/dependency-review-action@v4
+        if: steps.graph.outputs.enabled == 'true'
         with:
           fail-on-severity: high
